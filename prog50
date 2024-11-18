@@ -1,0 +1,60 @@
+--50
+.data
+    filename: .asciz "salida.txt"
+    content: .asciz "Texto de prueba para escribir en el archivo\n"
+    error_msg: .asciz "Error al abrir/escribir archivo\n"
+    success_msg: .asciz "Archivo escrito exitosamente\n"
+    
+.text
+.align 2
+.global main
+.type main, %function
+
+main:
+    stp x29, x30, [sp, -16]!
+    mov x29, sp
+
+    // Abrir archivo (crear si no existe)
+    mov x0, #-100        // AT_FDCWD
+    adrp x1, filename
+    add x1, x1, :lo12:filename
+    mov x2, #0x41       // O_WRONLY | O_CREAT
+    mov x3, #0644       // Permisos
+    mov x8, #56         // sys_openat
+    svc #0
+    
+    // Verificar error
+    cmp x0, #0
+    blt error
+    
+    // Guardar file descriptor
+    mov x19, x0
+    
+    // Escribir contenido
+    mov x0, x19         // file descriptor
+    adrp x1, content
+    add x1, x1, :lo12:content
+    mov x2, #40         // longitud del contenido
+    mov x8, #64         // sys_write
+    svc #0
+    
+    // Cerrar archivo
+    mov x0, x19
+    mov x8, #57         // sys_close
+    svc #0
+    
+    // Mensaje de éxito
+    adrp x0, success_msg
+    add x0, x0, :lo12:success_msg
+    bl printf
+    b exit
+
+error:
+    adrp x0, error_msg
+    add x0, x0, :lo12:error_msg
+    bl printf
+
+exit:
+    mov w0, #0
+    ldp x29, x30, [sp], 16
+    ret
