@@ -1,0 +1,90 @@
+--45
+.data
+    prompt: .asciz "Ingrese un número: "
+    is_armstrong: .asciz "El número %d es Armstrong\n"
+    not_armstrong: .asciz "El número %d no es Armstrong\n"
+    scanfmt: .asciz "%d"
+    numero: .word 0
+    temp: .word 0
+    potencia: .word 0
+
+.text
+.align 2
+.global main
+.type main, %function
+
+main:
+    stp x29, x30, [sp, -16]!
+    mov x29, sp
+
+    // Solicitar número
+    adrp x0, prompt
+    add x0, x0, :lo12:prompt
+    bl printf
+
+    adrp x0, scanfmt
+    add x0, x0, :lo12:scanfmt
+    adrp x1, numero
+    add x1, x1, :lo12:numero
+    bl scanf
+
+    // Contar dígitos
+    adrp x1, numero
+    add x1, x1, :lo12:numero
+    ldr w2, [x1]        // número original
+    mov w3, w2          // copia para contar dígitos
+    mov w4, #0          // contador de dígitos
+
+count_digits:
+    cbz w3, calc_armstrong
+    add w4, w4, #1
+    mov w5, #10
+    sdiv w3, w3, w5
+    b count_digits
+
+calc_armstrong:
+    mov w3, w2          // restaurar número original
+    mov w5, #0          // suma de potencias
+
+next_digit:
+    cbz w3, check_result
+    mov w6, #10
+    sdiv w7, w3, w6     // w7 = número / 10
+    msub w8, w7, w6, w3 // w8 = dígito actual
+    
+    // Calcular potencia
+    mov w9, #1          // resultado de la potencia
+    mov w10, w4         // exponente (número de dígitos)
+power_loop:
+    cbz w10, add_power
+    mul w9, w9, w8
+    sub w10, w10, #1
+    b power_loop
+
+add_power:
+    add w5, w5, w9      // sumar a la suma total
+    mov w3, w7          // siguiente dígito
+    b next_digit
+
+check_result:
+    cmp w5, w2
+    bne not_armstrong_num
+
+    // Es Armstrong
+    adrp x0, is_armstrong
+    add x0, x0, :lo12:is_armstrong
+    mov w1, w2
+    bl printf
+    b exit
+
+not_armstrong_num:
+    // No es Armstrong
+    adrp x0, not_armstrong
+    add x0, x0, :lo12:not_armstrong
+    mov w1, w2
+    bl printf
+
+exit:
+    mov w0, #0
+    ldp x29, x30, [sp], 16
+    ret
