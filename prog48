@@ -1,0 +1,76 @@
+--48
+.data
+    prompt: .asciz "Presione Enter para empezar la medición..."
+    end_msg: .asciz "\nTiempo de ejecución: %d microsegundos\n"
+    buffer: .skip 10
+    timespec_start: .skip 16
+    timespec_end: .skip 16
+    const_1m: .word 1000000
+    const_1k: .word 1000
+
+.text
+.align 2
+.global main
+.type main, %function
+
+main:
+    stp x29, x30, [sp, -16]!
+    mov x29, sp
+
+    adrp x0, prompt
+    add x0, x0, :lo12:prompt
+    bl printf
+
+    mov x0, #0
+    adrp x1, buffer
+    add x1, x1, :lo12:buffer
+    mov x2, #10
+    mov x8, #63
+    svc #0
+
+    mov x0, #1
+    adrp x1, timespec_start
+    add x1, x1, :lo12:timespec_start
+    mov x8, #113
+    svc #0
+
+    // Loop más pequeño
+    mov w19, #0
+loop_start:
+    add w19, w19, #1
+    cmp w19, #1000
+    bne loop_start
+
+    mov x0, #1
+    adrp x1, timespec_end
+    add x1, x1, :lo12:timespec_end
+    mov x8, #113
+    svc #0
+
+    // Calcular tiempo
+    adrp x1, timespec_end
+    add x1, x1, :lo12:timespec_end
+    ldp x2, x3, [x1]
+    adrp x1, timespec_start
+    add x1, x1, :lo12:timespec_start
+    ldp x4, x5, [x1]
+    
+    // Convertir y calcular diferencia
+    mov x6, #1000
+    mul x2, x2, x6
+    udiv x3, x3, x6
+    add x2, x2, x3
+    
+    mul x4, x4, x6
+    udiv x5, x5, x6
+    add x4, x4, x5
+    
+    sub x1, x2, x4
+
+    adrp x0, end_msg
+    add x0, x0, :lo12:end_msg
+    bl printf
+
+    mov w0, #0
+    ldp x29, x30, [sp], 16
+    ret
