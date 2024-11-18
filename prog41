@@ -1,0 +1,39 @@
+--41
+.data
+    prompt: .asciz "Ingrese un número decimal: "
+    result: .asciz "Hexadecimal: 0x%X\n"
+    scanfmt: .asciz "%d"
+    numero: .word 0
+
+.text
+.align 2
+.global main
+.type main, %function
+
+main:
+    // Guardar registros
+    stp x29, x30, [sp, -16]!
+    mov x29, sp
+
+    // printf(prompt)
+    adrp x0, prompt
+    add x0, x0, :lo12:prompt
+    bl printf
+
+    // scanf("%d", &numero)
+    adrp x0, scanfmt
+    add x0, x0, :lo12:scanfmt
+    adrp x1, numero
+    add x1, x1, :lo12:numero
+    bl scanf
+
+    // printf(result, numero)
+    adrp x0, result
+    add x0, x0, :lo12:result
+    ldr w1, [x1]
+    bl printf
+
+    // Restaurar y retornar
+    mov w0, #0
+    ldp x29, x30, [sp], 16
+    ret
