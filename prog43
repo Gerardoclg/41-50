@@ -1,0 +1,129 @@
+--43
+.data
+    menu: .asciz "\nCalculadora Simple\n1. Suma\n2. Resta\n3. Multiplicación\n4. División\n5. Salir\nElija opción: "
+    prompt1: .asciz "Ingrese primer número: "
+    prompt2: .asciz "Ingrese segundo número: "
+    result: .asciz "Resultado: %d\n"
+    div_result: .asciz "Resultado: %d (Cociente) %d (Residuo)\n"
+    scanfmt: .asciz "%d"
+    error_div: .asciz "Error: División por cero\n"
+    num1: .word 0
+    num2: .word 0
+    opcion: .word 0
+
+.text
+.align 2
+.global main
+.type main, %function
+
+main:
+    stp x29, x30, [sp, -16]!
+    mov x29, sp
+
+menu_loop:
+    // Mostrar menú
+    adrp x0, menu
+    add x0, x0, :lo12:menu
+    bl printf
+
+    // Leer opción
+    adrp x0, scanfmt
+    add x0, x0, :lo12:scanfmt
+    adrp x1, opcion
+    add x1, x1, :lo12:opcion
+    bl scanf
+
+    // Verificar si es salir
+    adrp x1, opcion
+    add x1, x1, :lo12:opcion
+    ldr w1, [x1]
+    cmp w1, #5
+    beq exit
+
+    // Leer números
+    adrp x0, prompt1
+    add x0, x0, :lo12:prompt1
+    bl printf
+    
+    adrp x0, scanfmt
+    add x0, x0, :lo12:scanfmt
+    adrp x1, num1
+    add x1, x1, :lo12:num1
+    bl scanf
+
+    adrp x0, prompt2
+    add x0, x0, :lo12:prompt2
+    bl printf
+    
+    adrp x0, scanfmt
+    add x0, x0, :lo12:scanfmt
+    adrp x1, num2
+    add x1, x1, :lo12:num2
+    bl scanf
+
+    // Cargar números en registros
+    adrp x1, num1
+    add x1, x1, :lo12:num1
+    ldr w4, [x1]
+    adrp x1, num2
+    add x1, x1, :lo12:num2
+    ldr w5, [x1]
+
+    // Verificar operación
+    adrp x1, opcion
+    add x1, x1, :lo12:opcion
+    ldr w1, [x1]
+    
+    cmp w1, #1
+    beq suma
+    cmp w1, #2
+    beq resta
+    cmp w1, #3
+    beq multiplicacion
+    cmp w1, #4
+    beq division
+    b menu_loop
+
+suma:
+    add w1, w4, w5
+    adrp x0, result
+    add x0, x0, :lo12:result
+    bl printf
+    b menu_loop
+
+resta:
+    sub w1, w4, w5
+    adrp x0, result
+    add x0, x0, :lo12:result
+    bl printf
+    b menu_loop
+
+multiplicacion:
+    mul w1, w4, w5
+    adrp x0, result
+    add x0, x0, :lo12:result
+    bl printf
+    b menu_loop
+
+division:
+    // Verificar división por cero
+    cmp w5, #0
+    beq div_zero
+    
+    sdiv w1, w4, w5
+    msub w2, w1, w5, w4  // Residuo
+    adrp x0, div_result
+    add x0, x0, :lo12:div_result
+    bl printf
+    b menu_loop
+
+div_zero:
+    adrp x0, error_div
+    add x0, x0, :lo12:error_div
+    bl printf
+    b menu_loop
+
+exit:
+    mov w0, #0
+    ldp x29, x30, [sp], 16
+    ret
