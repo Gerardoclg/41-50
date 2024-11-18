@@ -1,0 +1,103 @@
+.data
+    prompt: .asciz "Ingrese número de cadenas: "
+    str_prompt: .asciz "Ingrese cadena %d: "
+    result: .asciz "Prefijo común más largo: %s\n"
+    scanfmt: .asciz "%d"
+    strfmt: .asciz "%s"
+    n_strings: .word 0
+    strings: .skip 1000
+    prefix: .skip 100
+
+.text
+.align 2
+.global main
+.type main, %function
+
+main:
+    stp x29, x30, [sp, -16]!
+    mov x29, sp
+
+    adrp x0, prompt
+    add x0, x0, :lo12:prompt
+    bl printf
+
+    adrp x0, scanfmt
+    add x0, x0, :lo12:scanfmt
+    adrp x1, n_strings
+    add x1, x1, :lo12:n_strings
+    bl scanf
+
+    mov w19, #0
+    adrp x20, strings
+    add x20, x20, :lo12:strings
+
+read_loop:
+    adrp x1, n_strings
+    add x1, x1, :lo12:n_strings
+    ldr w1, [x1]
+    cmp w19, w1
+    bge find_prefix
+
+    adrp x0, str_prompt
+    add x0, x0, :lo12:str_prompt
+    add w1, w19, #1
+    bl printf
+
+    adrp x0, strfmt
+    add x0, x0, :lo12:strfmt
+    mov x1, x20
+    bl scanf
+
+    add x20, x20, #100
+    add w19, w19, #1
+    b read_loop
+
+find_prefix:
+    adrp x20, strings
+    add x20, x20, :lo12:strings
+    mov w21, #0
+
+check_char:
+    ldrb w22, [x20, w21, sxtw]
+    cbz w22, print_result
+
+    mov w19, #1
+compare_loop:
+    adrp x1, n_strings
+    add x1, x1, :lo12:n_strings
+    ldr w1, [x1]
+    cmp w19, w1
+    bge store_char
+
+    mov x23, x20
+    mov w24, #100
+    mul w24, w19, w24
+    add x23, x23, w24, sxtw
+    ldrb w23, [x23, w21, sxtw]
+    cmp w22, w23
+    bne print_result
+
+    add w19, w19, #1
+    b compare_loop
+
+store_char:
+    adrp x23, prefix
+    add x23, x23, :lo12:prefix
+    strb w22, [x23, w21, sxtw]
+    add w21, w21, #1
+    b check_char
+
+print_result:
+    adrp x23, prefix
+    add x23, x23, :lo12:prefix
+    mov w22, #0
+    strb w22, [x23, w21, sxtw]
+
+    adrp x0, result
+    add x0, x0, :lo12:result
+    mov x1, x23
+    bl printf
+
+    mov w0, #0
+    ldp x29, x30, [sp], 16
+    ret
