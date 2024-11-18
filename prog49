@@ -1,0 +1,44 @@
+--49
+.data
+    prompt: .asciz "Ingrese texto (máximo 100 caracteres): "
+    result: .asciz "Texto ingresado: %s\n"
+    buffer: .skip 100
+    scanfmt: .asciz "%s"
+
+.text
+.align 2
+.global main
+.type main, %function
+
+main:
+    stp x29, x30, [sp, -16]!
+    mov x29, sp
+
+    // Mostrar prompt
+    adrp x0, prompt
+    add x0, x0, :lo12:prompt
+    bl printf
+
+    // Leer entrada
+    mov x0, #0              // stdin
+    adrp x1, buffer
+    add x1, x1, :lo12:buffer
+    mov x2, #100           // tamaño máximo
+    mov x8, #63            // sys_read
+    svc #0
+
+    // Agregar null terminator
+    adrp x1, buffer
+    add x1, x1, :lo12:buffer
+    strb wzr, [x1, x0]    // x0 contiene bytes leídos
+
+    // Mostrar resultado
+    adrp x0, result
+    add x0, x0, :lo12:result
+    adrp x1, buffer
+    add x1, x1, :lo12:buffer
+    bl printf
+
+    mov w0, #0
+    ldp x29, x30, [sp], 16
+    ret
