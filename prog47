@@ -1,0 +1,70 @@
+--47
+.data
+    prompt1: .asciz "Ingrese primer número: "
+    prompt2: .asciz "Ingrese segundo número: "
+    result_ok: .asciz "Suma: %d\n"
+    overflow_msg: .asciz "¡Desbordamiento detectado!\n"
+    scanfmt: .asciz "%d"
+    num1: .word 0
+    num2: .word 0
+
+.text
+.align 2
+.global main
+.type main, %function
+
+main:
+    stp x29, x30, [sp, -16]!
+    mov x29, sp
+
+    // Primer número
+    adrp x0, prompt1
+    add x0, x0, :lo12:prompt1
+    bl printf
+
+    adrp x0, scanfmt
+    add x0, x0, :lo12:scanfmt
+    adrp x1, num1
+    add x1, x1, :lo12:num1
+    bl scanf
+
+    // Segundo número
+    adrp x0, prompt2
+    add x0, x0, :lo12:prompt2
+    bl printf
+
+    adrp x0, scanfmt
+    add x0, x0, :lo12:scanfmt
+    adrp x1, num2
+    add x1, x1, :lo12:num2
+    bl scanf
+
+    // Cargar números
+    adrp x1, num1
+    add x1, x1, :lo12:num1
+    ldr w2, [x1]
+    adrp x1, num2
+    add x1, x1, :lo12:num2
+    ldr w3, [x1]
+
+    // Sumar y verificar desbordamiento
+    adds w4, w2, w3
+    bvs overflow    // Salta si hay desbordamiento
+
+    // Sin desbordamiento
+    adrp x0, result_ok
+    add x0, x0, :lo12:result_ok
+    mov w1, w4
+    bl printf
+    b exit
+
+overflow:
+    adrp x0, overflow_msg
+    add x0, x0, :lo12:overflow_msg
+    bl printf
+
+exit:
+    mov w0, #0
+    ldp x29, x30, [sp], 16
+    ret
+    
