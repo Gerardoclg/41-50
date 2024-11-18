@@ -1,0 +1,83 @@
+--44
+.data
+    prompt: .asciz "Ingrese semilla (número entero): "
+    result: .asciz "Número aleatorio generado: %d\n"
+    continue_msg: .asciz "¿Generar otro número? (1=Sí, 0=No): "
+    scanfmt: .asciz "%d"
+    seed: .word 1
+    opcion: .word 1
+    multiplicador: .word 1103515245
+    incremento: .word 12345
+
+.text
+.align 2
+.global main
+.type main, %function
+
+main:
+    stp x29, x30, [sp, -16]!
+    mov x29, sp
+
+    // Solicitar semilla inicial
+    adrp x0, prompt
+    add x0, x0, :lo12:prompt
+    bl printf
+
+    adrp x0, scanfmt
+    add x0, x0, :lo12:scanfmt
+    adrp x1, seed
+    add x1, x1, :lo12:seed
+    bl scanf
+
+generate:
+    // Cargar valores necesarios
+    adrp x1, seed
+    add x1, x1, :lo12:seed
+    ldr w2, [x1]
+    
+    adrp x3, multiplicador
+    add x3, x3, :lo12:multiplicador
+    ldr w3, [x3]
+    
+    mul w2, w2, w3
+    
+    adrp x3, incremento
+    add x3, x3, :lo12:incremento
+    ldr w3, [x3]
+    add w2, w2, w3
+    
+    // mod 2^31
+    mov w4, #0x7fff
+    movk w4, #0x0000, lsl #16
+    and w2, w2, w4
+    
+    str w2, [x1]
+    
+    // Imprimir resultado
+    adrp x0, result
+    add x0, x0, :lo12:result
+    mov w1, w2
+    bl printf
+
+    // Preguntar si continuar
+    adrp x0, continue_msg
+    add x0, x0, :lo12:continue_msg
+    bl printf
+
+    adrp x0, scanfmt
+    add x0, x0, :lo12:scanfmt
+    adrp x1, opcion
+    add x1, x1, :lo12:opcion
+    bl scanf
+
+    // Verificar si continuar
+    adrp x1, opcion
+    add x1, x1, :lo12:opcion
+    ldr w1, [x1]
+    cmp w1, #1
+    beq generate
+
+exit:
+    mov w0, #0
+    ldp x29, x30, [sp], 16
+    ret
